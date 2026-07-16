@@ -1,255 +1,45 @@
-<!doctype html>
-<html lang="sv">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Junis Theme Studio v3</title>
-<style>
-html,body{margin:0;background:#090d17;color:#f6f7ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100%}
-*{box-sizing:border-box}
-body{padding:18px}
-h1{font-size:32px;margin:8px 0}
-p{color:#b7c0d5;line-height:1.4}
-.panel{background:#121b2c;border:1px solid #2a3750;border-radius:20px;padding:16px;margin:14px 0}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-button{appearance:none;-webkit-appearance:none;border:0;border-radius:14px;padding:15px 18px;font-size:17px;font-weight:800;background:#27364f;color:white;touch-action:manipulation}
-button.primary{background:#8657db} button.green{background:#36b7aa;color:#061313} button.red{background:#6d2e42}
-.status{padding:13px;border-radius:12px;background:#0b1322;margin-top:12px;font-weight:700}
-.ok{color:#6ee7b7}.bad{color:#fda4af}.warn{color:#fde68a}
-label{display:block;margin-top:14px;font-size:13px;font-weight:800;color:#aeb9cf}
-input[type=range]{width:100%;margin:8px 0 4px}
-.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:12px}
-.step{height:42px;padding:0;background:#1c2940;border:1px solid #34435e}
-.step.on{background:#8657db}
-.small{font-size:12px;color:#8f9bb1}
-#log{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,monospace;font-size:12px;max-height:150px;overflow:auto}
-</style>
-</head>
-<body>
-<h1>Junis Theme Studio v3</h1>
-<p>Fristående originalmusik i magisk rockstil. Denna version använder enkel JavaScript för maximal iPhone-kompatibilitet.</p>
-
-<div class="panel">
-  <div class="row">
-    <button class="green" ontouchend="return unlockAudio(event)" onclick="return unlockAudio(event)">🔊 Aktivera ljud</button>
-    <button class="primary" ontouchend="return playSong(event)" onclick="return playSong(event)">▶ Spela</button>
-    <button class="red" ontouchend="return stopSong(event)" onclick="return stopSong(event)">■ Stoppa</button>
-    <button ontouchend="return testTone(event)" onclick="return testTone(event)">♪ Testton</button>
-  </div>
-  <div id="status" class="status warn">Startar självtest…</div>
-</div>
-
-<div class="panel">
-  <label>Tempo: <span id="tempoText">124</span> BPM</label>
-  <input id="tempo" type="range" min="70" max="180" value="124" oninput="tempoChanged()">
-  <label>Mastervolym: <span id="volumeText">75</span>%</label>
-  <input id="volume" type="range" min="0" max="100" value="75" oninput="volumeChanged()">
-</div>
-
-<div class="panel">
-  <b>Trummor — klicka rutorna</b>
-  <div class="small">Varje rad är 16 steg. Lila = aktivt slag.</div>
-  <label>Kick</label><div id="kickGrid" class="grid"></div>
-  <label>Virvel</label><div id="snareGrid" class="grid"></div>
-  <label>Hi-hat</label><div id="hatGrid" class="grid"></div>
-</div>
-
-<div class="panel">
-  <b>Diagnostik</b>
-  <div id="log">Laddar…</div>
-</div>
-
+<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Junis Theme Studio v4</title><style>
+:root{--bg:#080d17;--p:#121b2c;--b:#2a3750;--t:#f6f7ff;--m:#aeb9cf;--a:#8657db;--g:#36b7aa;--r:#8b314b}*{box-sizing:border-box}html,body{margin:0;background:linear-gradient(#080d17,#0d1320);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{padding:16px;max-width:1000px;margin:auto}h1{font-size:32px;margin:8px 0}p,.small{color:var(--m);line-height:1.4}.panel{background:var(--p);border:1px solid var(--b);border-radius:20px;padding:16px;margin:14px 0}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}button,select{appearance:none;border:0;border-radius:14px;padding:14px 16px;font-size:16px;font-weight:800;background:#27364f;color:white;touch-action:manipulation}button.primary{background:var(--a)}button.green{background:var(--g);color:#061313}button.red{background:var(--r)}button:disabled{opacity:.45}.status{padding:12px;border-radius:12px;background:#0b1322;margin-top:12px;font-weight:700}.ok{color:#6ee7b7}.bad{color:#fda4af}.warn{color:#fde68a}label{display:block;margin-top:12px;font-size:13px;font-weight:800;color:var(--m)}input[type=range]{width:100%}.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:8px}.step{height:40px;padding:0;background:#1c2940;border:1px solid #34435e}.step.on{background:var(--a)}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}.basscard{padding:13px;border-radius:14px;background:#19243a;border:1px solid #31415e;cursor:pointer}.basscard.active{outline:3px solid #8f6de3}.rec{height:14px;background:#0a111f;border-radius:99px;overflow:hidden}.rec>div{height:100%;width:0;background:linear-gradient(90deg,#36b7aa,#ffd166,#ff6b6b)}audio{width:100%;margin-top:10px}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.twocol{grid-template-columns:1fr}}
+</style></head><body>
+<h1>Junis Theme Studio v4</h1><p>Magisk rock, tio basgångar och inspelade robotiska röst-/ljudinlägg.</p>
+<div class="panel"><div class="row"><button class="green" id="unlock">🔊 Aktivera ljud</button><button class="primary" id="play">▶ Spela</button><button class="red" id="stop">■ Stoppa</button><button id="test">♪ Testton</button></div><div id="status" class="status warn">Redo.</div></div>
+<div class="twocol"><div class="panel"><label>Tempo <span id="tempoText">124</span> BPM</label><input id="tempo" type="range" min="70" max="180" value="124"><label>Master <span id="volumeText">75</span>%</label><input id="volume" type="range" min="0" max="100" value="75"></div><div class="panel"><b>Vald basgång</b><div id="bassName" style="font-size:24px;margin-top:8px">1. Heroisk puls</div><p class="small">Byt medan låten spelar.</p></div></div>
+<div class="panel"><b>10 basmelodier</b><div id="bassCards" class="cards" style="margin-top:12px"></div></div>
+<div class="panel"><b>Robotisk ljudinspelning</b><p class="small">Spela in röst, klapp, vissling eller annat. Ljudet kan sedan loopas som ett elektroniskt house-inlägg.</p><div class="row"><button id="recStart" class="red">● Spela in</button><button id="recStop" disabled>■ Avsluta</button><button id="recPlay" disabled>▶ Spela effekt</button><button id="recLoop" disabled>⟳ Loop: av</button></div><div class="rec" style="margin-top:12px"><div id="recMeter"></div></div><audio id="rawAudio" controls></audio><label>Robotgrad <span id="robotText">70</span>%</label><input id="robot" type="range" min="0" max="100" value="70"><label>Pitch <span id="pitchText">0</span> halvtoner</label><input id="pitch" type="range" min="-12" max="12" value="0"><label>Filter <span id="filterText">1800</span> Hz</label><input id="filter" type="range" min="300" max="5000" value="1800"><label>Eko <span id="delayText">28</span>%</label><input id="delay" type="range" min="0" max="70" value="28"></div>
+<div class="panel"><b>Trummor</b><label>Kick</label><div id="kickGrid" class="grid"></div><label>Virvel</label><div id="snareGrid" class="grid"></div><label>Hi-hat</label><div id="hatGrid" class="grid"></div></div>
 <script>
-var AudioClass = window.AudioContext || window.webkitAudioContext;
-var audio = null;
-var master = null;
-var timer = null;
-var playing = false;
-var stepIndex = 0;
-var nextTime = 0;
-
-var patterns = {
-  kick:[1,0,0,0,1,0,0,1,1,0,0,0,1,0,1,0],
-  snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-  hat:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-};
-var melody=[81,84,88,83,81,88,91,88,86,84,83,88,93,91,88,83];
-var chords=[0,0,5,5,3,3,7,7,0,0,8,8,5,5,7,7];
-
-function el(id){return document.getElementById(id)}
-function log(message){
-  el("log").textContent = new Date().toLocaleTimeString()+" "+message+"\n"+el("log").textContent;
-}
-function setStatus(text,kind){
-  el("status").textContent=text;
-  el("status").className="status "+kind;
-}
-function prevent(e){
-  if(e){ if(e.preventDefault)e.preventDefault(); if(e.stopPropagation)e.stopPropagation(); }
-  return false;
-}
-function unlockAudio(e){
-  try{
-    if(!AudioClass){setStatus("Web Audio stöds inte i denna visare.","bad");log("AudioContext saknas");return prevent(e)}
-    if(!audio){
-      audio=new AudioClass();
-      master=audio.createGain();
-      master.gain.value=Number(el("volume").value)/100;
-      master.connect(audio.destination);
-      log("AudioContext skapad");
-    }
-    var p=audio.resume();
-    if(p && p.then){
-      p.then(function(){
-        setStatus("Ljud aktivt: "+audio.state,"ok");
-        log("AudioContext aktiv: "+audio.state);
-        silentUnlock();
-      }).catch(function(err){setStatus("Ljudfel: "+err.message,"bad");log(err.message)});
-    }else{
-      setStatus("Ljud aktivt","ok");silentUnlock();
-    }
-  }catch(err){setStatus("Fel: "+err.message,"bad");log(err.stack||err.message)}
-  return prevent(e);
-}
-function silentUnlock(){
-  try{
-    var b=audio.createBuffer(1,1,22050);
-    var s=audio.createBufferSource();
-    s.buffer=b;s.connect(master);s.start(0);
-  }catch(err){log("Unlock-varning: "+err.message)}
-}
-function tone(freq,time,duration,volume,type){
-  var o=audio.createOscillator();
-  var g=audio.createGain();
-  o.type=type||"sine";
-  o.frequency.setValueAtTime(freq,time);
-  g.gain.setValueAtTime(0.0001,time);
-  g.gain.exponentialRampToValueAtTime(volume,time+0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001,time+duration);
-  o.connect(g);g.connect(master);
-  o.start(time);o.stop(time+duration+0.03);
-}
-function noise(time,duration,volume){
-  var len=Math.floor(audio.sampleRate*duration);
-  var buf=audio.createBuffer(1,len,audio.sampleRate);
-  var data=buf.getChannelData(0);
-  var i;
-  for(i=0;i<len;i++)data[i]=Math.random()*2-1;
-  var src=audio.createBufferSource();
-  var gain=audio.createGain();
-  var filter=audio.createBiquadFilter();
-  src.buffer=buf;filter.type="highpass";filter.frequency.value=1800;
-  gain.gain.setValueAtTime(volume,time);
-  gain.gain.exponentialRampToValueAtTime(0.0001,time+duration);
-  src.connect(filter);filter.connect(gain);gain.connect(master);src.start(time);
-}
-function hz(n){return 440*Math.pow(2,(n-69)/12)}
-function kick(t){
-  var o=audio.createOscillator(),g=audio.createGain();
-  o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(42,t+0.14);
-  g.gain.setValueAtTime(0.8,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
-  o.connect(g);g.connect(master);o.start(t);o.stop(t+0.22);
-}
-function snare(t){noise(t,0.16,0.28);tone(180,t,0.12,0.12,"triangle")}
-function hat(t){noise(t,0.045,0.07)}
-function schedule(s,t){
-  if(patterns.kick[s])kick(t);
-  if(patterns.snare[s])snare(t);
-  if(patterns.hat[s])hat(t);
-  if(s%2===0){
-    tone(hz(45+chords[s]),t,0.24,0.09,"sawtooth");
-    tone(hz(57+chords[s]),t,0.18,0.035,"square");
-  }
-  tone(hz(melody[s]),t,0.30,0.12,"sine");
-  setTimeout(function(){highlight(s)},Math.max(0,(t-audio.currentTime)*1000));
-}
-function scheduler(){
-  var bpm=Number(el("tempo").value);
-  var stepDur=60/bpm/4;
-  while(nextTime<audio.currentTime+0.12){
-    schedule(stepIndex,nextTime);
-    nextTime+=stepDur;
-    stepIndex=(stepIndex+1)%16;
-  }
-}
-function playSong(e){
-  unlockAudio(null);
-  setTimeout(function(){
-    if(!audio || audio.state!=="running"){
-      setStatus("Ljudet är blockerat. Öppna filen i Safari, inte i filförhandsvisningen.","bad");
-      log("Play avbruten: AudioContext ej running");
-      return;
-    }
-    if(playing)return;
-    playing=true;stepIndex=0;nextTime=audio.currentTime+0.08;
-    timer=setInterval(scheduler,25);
-    setStatus("Spelar Junis Theme","ok");log("Uppspelning startad");
-  },80);
-  return prevent(e);
-}
-function stopSong(e){
-  if(timer)clearInterval(timer);
-  timer=null;playing=false;stepIndex=0;highlight(-1);
-  setStatus(audio?"Stoppad · ljud aktivt":"Stoppad","warn");log("Stoppad");
-  return prevent(e);
-}
-function testTone(e){
-  unlockAudio(null);
-  setTimeout(function(){
-    if(!audio || audio.state!=="running"){
-      setStatus("Testton blockerad av visaren. Öppna i Safari.","bad");return;
-    }
-    var t=audio.currentTime+0.03;
-    tone(440,t,0.25,0.2,"sine");
-    tone(554.37,t+0.18,0.25,0.2,"sine");
-    tone(659.25,t+0.36,0.35,0.2,"sine");
-    setStatus("Testton spelad","ok");log("Testton spelad");
-  },80);
-  return prevent(e);
-}
-function tempoChanged(){el("tempoText").textContent=el("tempo").value}
-function volumeChanged(){
-  el("volumeText").textContent=el("volume").value;
-  if(master)master.gain.value=Number(el("volume").value)/100;
-}
-function renderGrid(name){
-  var root=el(name+"Grid");
-  root.innerHTML="";
-  var i,b;
-  for(i=0;i<16;i++){
-    b=document.createElement("button");
-    b.className="step"+(patterns[name][i]?" on":"");
-    b.setAttribute("data-name",name);
-    b.setAttribute("data-index",i);
-    b.onclick=function(){
-      var n=this.getAttribute("data-name"),x=Number(this.getAttribute("data-index"));
-      patterns[n][x]=patterns[n][x]?0:1;
-      this.className="step"+(patterns[n][x]?" on":"");
-    };
-    root.appendChild(b);
-  }
-}
-function highlight(s){
-  var buttons=document.querySelectorAll(".step");
-  var i;
-  for(i=0;i<buttons.length;i++)buttons[i].style.outline="";
-  if(s>=0){
-    var active=document.querySelectorAll('[data-index="'+s+'"]');
-    for(i=0;i<active.length;i++)active[i].style.outline="3px solid #f8d66d";
-  }
-}
-function boot(){
-  renderGrid("kick");renderGrid("snare");renderGrid("hat");
-  tempoChanged();volumeChanged();
-  setStatus("JavaScript fungerar. Tryck Aktivera ljud.","ok");
-  log("Självtest klart: knappar och JavaScript aktiva");
-}
-window.onerror=function(message,source,line,col,error){
-  setStatus("JavaScript-fel rad "+line+": "+message,"bad");
-  log("JS-FEL "+line+":"+col+" "+message);
-};
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);
-else boot();
-</script>
-</body>
-</html>
+var AC=window.AudioContext||window.webkitAudioContext,audio=null,master=null,timer=null,playing=false,stepIndex=0,nextTime=0;
+var mediaRecorder=null,mediaStream=null,chunks=[],recordedBuffer=null,recordedUrl=null,loopRobot=false,robotSources=[];
+var patterns={kick:[1,0,0,0,1,0,0,1,1,0,0,0,1,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]};
+var melody=[81,84,88,83,81,88,91,88,86,84,83,88,93,91,88,83],chords=[0,0,5,5,3,3,7,7,0,0,8,8,5,5,7,7];
+var basses=[
+{name:'Heroisk puls',n:[0,0,7,0,5,5,7,5,3,3,10,3,7,7,5,7]},
+{name:'Mörk galopp',n:[0,0,0,7,0,0,5,7,3,3,3,10,7,7,5,3]},
+{name:'Neon drive',n:[0,12,7,12,5,12,7,10,3,10,8,10,7,12,10,7]},
+{name:'Stadig rock',n:[0,0,0,0,5,5,5,5,3,3,3,3,7,7,7,7]},
+{name:'Arpeggio-bas',n:[0,7,12,7,5,12,17,12,3,10,15,10,7,14,19,14]},
+{name:'Synkoperad',n:[0,0,7,0,0,5,0,7,3,0,10,3,0,7,5,0]},
+{name:'Boss-strid',n:[0,12,0,7,5,17,5,12,3,15,3,10,7,19,7,14]},
+{name:'Disco-rock',n:[0,7,12,7,5,12,17,12,3,10,15,10,7,14,19,14]},
+{name:'Tung oktav',n:[0,12,0,12,5,17,5,17,3,15,3,15,7,19,7,19]},
+{name:'Finale',n:[0,7,12,14,5,12,17,19,3,10,15,17,7,14,19,24]}
+],bassIndex=0;
+function el(x){return document.getElementById(x)}function status(t,c){el('status').textContent=t;el('status').className='status '+c}function hz(n){return 440*Math.pow(2,(n-69)/12)}
+async function unlock(){try{if(!audio){audio=new AC();master=audio.createGain();master.gain.value=+el('volume').value/100;master.connect(audio.destination)}await audio.resume();status('Ljud aktivt','ok')}catch(e){status('Ljudfel: '+e.message,'bad')}}
+function tone(f,t,d,v,type){var o=audio.createOscillator(),g=audio.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(master);o.start(t);o.stop(t+d+.03)}
+function noise(t,d,v,hp){var b=audio.createBuffer(1,audio.sampleRate*d,audio.sampleRate),x=b.getChannelData(0);for(var i=0;i<x.length;i++)x[i]=Math.random()*2-1;var s=audio.createBufferSource(),f=audio.createBiquadFilter(),g=audio.createGain();s.buffer=b;f.type='highpass';f.frequency.value=hp||1800;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(f).connect(g).connect(master);s.start(t)}
+function kick(t){var o=audio.createOscillator(),g=audio.createGain();o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(42,t+.14);g.gain.setValueAtTime(.8,t);g.gain.exponentialRampToValueAtTime(.0001,t+.2);o.connect(g).connect(master);o.start(t);o.stop(t+.22)}function snare(t){noise(t,.16,.28);tone(180,t,.12,.12,'triangle')}function hat(t){noise(t,.045,.07,6500)}
+function schedule(s,t){if(patterns.kick[s])kick(t);if(patterns.snare[s])snare(t);if(patterns.hat[s])hat(t);if(s%2===0){tone(hz(45+basses[bassIndex].n[s]),t,.25,.11,'sawtooth');tone(hz(33+basses[bassIndex].n[s]),t,.25,.05,'square')}tone(hz(melody[s]),t,.3,.11,'sine');setTimeout(function(){highlight(s)},Math.max(0,(t-audio.currentTime)*1000))}
+function scheduler(){var sd=60/(+el('tempo').value)/4;while(nextTime<audio.currentTime+.12){schedule(stepIndex,nextTime);nextTime+=sd;stepIndex=(stepIndex+1)%16}}
+async function play(){await unlock();if(playing)return;playing=true;stepIndex=0;nextTime=audio.currentTime+.08;timer=setInterval(scheduler,25);status('Spelar · '+basses[bassIndex].name,'ok')}function stop(){if(timer)clearInterval(timer);timer=null;playing=false;highlight(-1);stopRobot();status('Stoppad','warn')}
+function makeCurve(amount){var n=44100,c=new Float32Array(n),k=amount*5+1;for(var i=0;i<n;i++){var x=i*2/n-1;c[i]=(1+k)*x/(1+k*Math.abs(x))}return c}
+function playRobot(){if(!recordedBuffer)return;unlock().then(function(){var src=audio.createBufferSource(),filter=audio.createBiquadFilter(),shape=audio.createWaveShaper(),delay=audio.createDelay(1),fb=audio.createGain(),wet=audio.createGain(),dry=audio.createGain(),ring=audio.createGain(),lfo=audio.createOscillator(),lfoGain=audio.createGain();src.buffer=recordedBuffer;src.loop=loopRobot;src.playbackRate.value=Math.pow(2,+el('pitch').value/12);filter.type='bandpass';filter.frequency.value=+el('filter').value;filter.Q.value=4;shape.curve=makeCurve(+el('robot').value/8);shape.oversample='2x';delay.delayTime.value=.18;fb.gain.value=.28;wet.gain.value=+el('delay').value/100;dry.gain.value=.75;ring.gain.value=.65;lfo.frequency.value=28+(+el('robot').value*.7);lfoGain.gain.value=.45;lfo.connect(lfoGain).connect(ring.gain);src.connect(filter).connect(shape);shape.connect(dry).connect(ring);shape.connect(delay).connect(wet).connect(ring);delay.connect(fb).connect(delay);ring.connect(master);lfo.start();src.start();robotSources.push({src:src,lfo:lfo});src.onended=function(){try{lfo.stop()}catch(e){}};status('Spelar robotiskt ljud','ok')})}
+function stopRobot(){robotSources.forEach(function(x){try{x.src.stop()}catch(e){}try{x.lfo.stop()}catch(e){}});robotSources=[]}
+async function startRecording(){try{await unlock();mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];mediaRecorder=new MediaRecorder(mediaStream);mediaRecorder.ondataavailable=function(e){if(e.data.size)chunks.push(e.data)};mediaRecorder.onstop=finishRecording;mediaRecorder.start();el('recStart').disabled=true;el('recStop').disabled=false;status('Spelar in…','warn');animateMeter()}catch(e){status('Mikrofonfel: '+e.message,'bad')}}
+function animateMeter(){if(!mediaRecorder||mediaRecorder.state!=='recording'){el('recMeter').style.width='0%';return}el('recMeter').style.width=(20+Math.random()*75)+'%';setTimeout(animateMeter,100)}
+function stopRecording(){if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop();if(mediaStream)mediaStream.getTracks().forEach(function(t){t.stop()});el('recStart').disabled=false;el('recStop').disabled=true}
+async function finishRecording(){try{var blob=new Blob(chunks,{type:mediaRecorder.mimeType||'audio/webm'});if(recordedUrl)URL.revokeObjectURL(recordedUrl);recordedUrl=URL.createObjectURL(blob);el('rawAudio').src=recordedUrl;var ab=await blob.arrayBuffer();recordedBuffer=await audio.decodeAudioData(ab.slice(0));el('recPlay').disabled=false;el('recLoop').disabled=false;status('Inspelning klar','ok')}catch(e){status('Kunde inte läsa inspelningen: '+e.message,'bad')}}
+function renderBass(){el('bassCards').innerHTML='';basses.forEach(function(b,i){var d=document.createElement('div');d.className='basscard'+(i===bassIndex?' active':'');d.innerHTML='<b>'+(i+1)+'. '+b.name+'</b><div class="small">'+b.n.join(' · ')+'</div>';d.onclick=function(){bassIndex=i;el('bassName').textContent=(i+1)+'. '+b.name;renderBass();if(playing)status('Bas bytt till '+b.name,'ok')};el('bassCards').appendChild(d)})}
+function renderGrid(n){var r=el(n+'Grid');r.innerHTML='';for(let i=0;i<16;i++){var b=document.createElement('button');b.className='step'+(patterns[n][i]?' on':'');b.dataset.index=i;b.onclick=function(){patterns[n][i]=patterns[n][i]?0:1;b.className='step'+(patterns[n][i]?' on':'')};r.appendChild(b)}}function highlight(s){document.querySelectorAll('.step').forEach(function(b){b.style.outline=''});if(s>=0)document.querySelectorAll('[data-index="'+s+'"]').forEach(function(b){b.style.outline='3px solid #ffd166'})}
+el('unlock').onclick=unlock;el('play').onclick=play;el('stop').onclick=stop;el('test').onclick=function(){unlock().then(function(){var t=audio.currentTime+.03;tone(440,t,.2,.2);tone(554,t+.18,.2,.2);tone(659,t+.36,.3,.2)})};el('tempo').oninput=function(){el('tempoText').textContent=this.value};el('volume').oninput=function(){el('volumeText').textContent=this.value;if(master)master.gain.value=this.value/100};el('robot').oninput=function(){el('robotText').textContent=this.value};el('pitch').oninput=function(){el('pitchText').textContent=this.value};el('filter').oninput=function(){el('filterText').textContent=this.value};el('delay').oninput=function(){el('delayText').textContent=this.value};el('recStart').onclick=startRecording;el('recStop').onclick=stopRecording;el('recPlay').onclick=playRobot;el('recLoop').onclick=function(){loopRobot=!loopRobot;this.textContent='⟳ Loop: '+(loopRobot?'på':'av')};renderBass();renderGrid('kick');renderGrid('snare');renderGrid('hat');
+</script></body></html>
