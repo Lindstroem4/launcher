@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Junis Theme Studio v3</title>
+<style>
+html,body{margin:0;background:#090d17;color:#f6f7ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100%}
+*{box-sizing:border-box}
+body{padding:18px}
+h1{font-size:32px;margin:8px 0}
+p{color:#b7c0d5;line-height:1.4}
+.panel{background:#121b2c;border:1px solid #2a3750;border-radius:20px;padding:16px;margin:14px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+button{appearance:none;-webkit-appearance:none;border:0;border-radius:14px;padding:15px 18px;font-size:17px;font-weight:800;background:#27364f;color:white;touch-action:manipulation}
+button.primary{background:#8657db} button.green{background:#36b7aa;color:#061313} button.red{background:#6d2e42}
+.status{padding:13px;border-radius:12px;background:#0b1322;margin-top:12px;font-weight:700}
+.ok{color:#6ee7b7}.bad{color:#fda4af}.warn{color:#fde68a}
+label{display:block;margin-top:14px;font-size:13px;font-weight:800;color:#aeb9cf}
+input[type=range]{width:100%;margin:8px 0 4px}
+.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:12px}
+.step{height:42px;padding:0;background:#1c2940;border:1px solid #34435e}
+.step.on{background:#8657db}
+.small{font-size:12px;color:#8f9bb1}
+#log{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,monospace;font-size:12px;max-height:150px;overflow:auto}
+</style>
+</head>
+<body>
+<h1>Junis Theme Studio v3</h1>
+<p>Fristående originalmusik i magisk rockstil. Denna version använder enkel JavaScript för maximal iPhone-kompatibilitet.</p>
+
+<div class="panel">
+  <div class="row">
+    <button class="green" ontouchend="return unlockAudio(event)" onclick="return unlockAudio(event)">🔊 Aktivera ljud</button>
+    <button class="primary" ontouchend="return playSong(event)" onclick="return playSong(event)">▶ Spela</button>
+    <button class="red" ontouchend="return stopSong(event)" onclick="return stopSong(event)">■ Stoppa</button>
+    <button ontouchend="return testTone(event)" onclick="return testTone(event)">♪ Testton</button>
+  </div>
+  <div id="status" class="status warn">Startar självtest…</div>
+</div>
+
+<div class="panel">
+  <label>Tempo: <span id="tempoText">124</span> BPM</label>
+  <input id="tempo" type="range" min="70" max="180" value="124" oninput="tempoChanged()">
+  <label>Mastervolym: <span id="volumeText">75</span>%</label>
+  <input id="volume" type="range" min="0" max="100" value="75" oninput="volumeChanged()">
+</div>
+
+<div class="panel">
+  <b>Trummor — klicka rutorna</b>
+  <div class="small">Varje rad är 16 steg. Lila = aktivt slag.</div>
+  <label>Kick</label><div id="kickGrid" class="grid"></div>
+  <label>Virvel</label><div id="snareGrid" class="grid"></div>
+  <label>Hi-hat</label><div id="hatGrid" class="grid"></div>
+</div>
+
+<div class="panel">
+  <b>Diagnostik</b>
+  <div id="log">Laddar…</div>
+</div>
+
+<script>
+var AudioClass = window.AudioContext || window.webkitAudioContext;
+var audio = null;
+var master = null;
+var timer = null;
+var playing = false;
+var stepIndex = 0;
+var nextTime = 0;
+
+var patterns = {
+  kick:[1,0,0,0,1,0,0,1,1,0,0,0,1,0,1,0],
+  snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hat:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+};
+var melody=[81,84,88,83,81,88,91,88,86,84,83,88,93,91,88,83];
+var chords=[0,0,5,5,3,3,7,7,0,0,8,8,5,5,7,7];
+
+function el(id){return document.getElementById(id)}
+function log(message){
+  el("log").textContent = new Date().toLocaleTimeString()+" "+message+"\n"+el("log").textContent;
+}
+function setStatus(text,kind){
+  el("status").textContent=text;
+  el("status").className="status "+kind;
+}
+function prevent(e){
+  if(e){ if(e.preventDefault)e.preventDefault(); if(e.stopPropagation)e.stopPropagation(); }
+  return false;
+}
+function unlockAudio(e){
+  try{
+    if(!AudioClass){setStatus("Web Audio stöds inte i denna visare.","bad");log("AudioContext saknas");return prevent(e)}
+    if(!audio){
+      audio=new AudioClass();
+      master=audio.createGain();
+      master.gain.value=Number(el("volume").value)/100;
+      master.connect(audio.destination);
+      log("AudioContext skapad");
+    }
+    var p=audio.resume();
+    if(p && p.then){
+      p.then(function(){
+        setStatus("Ljud aktivt: "+audio.state,"ok");
+        log("AudioContext aktiv: "+audio.state);
+        silentUnlock();
+      }).catch(function(err){setStatus("Ljudfel: "+err.message,"bad");log(err.message)});
+    }else{
+      setStatus("Ljud aktivt","ok");silentUnlock();
+    }
+  }catch(err){setStatus("Fel: "+err.message,"bad");log(err.stack||err.message)}
+  return prevent(e);
+}
+function silentUnlock(){
+  try{
+    var b=audio.createBuffer(1,1,22050);
+    var s=audio.createBufferSource();
+    s.buffer=b;s.connect(master);s.start(0);
+  }catch(err){log("Unlock-varning: "+err.message)}
+}
+function tone(freq,time,duration,volume,type){
+  var o=audio.createOscillator();
+  var g=audio.createGain();
+  o.type=type||"sine";
+  o.frequency.setValueAtTime(freq,time);
+  g.gain.setValueAtTime(0.0001,time);
+  g.gain.exponentialRampToValueAtTime(volume,time+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,time+duration);
+  o.connect(g);g.connect(master);
+  o.start(time);o.stop(time+duration+0.03);
+}
+function noise(time,duration,volume){
+  var len=Math.floor(audio.sampleRate*duration);
+  var buf=audio.createBuffer(1,len,audio.sampleRate);
+  var data=buf.getChannelData(0);
+  var i;
+  for(i=0;i<len;i++)data[i]=Math.random()*2-1;
+  var src=audio.createBufferSource();
+  var gain=audio.createGain();
+  var filter=audio.createBiquadFilter();
+  src.buffer=buf;filter.type="highpass";filter.frequency.value=1800;
+  gain.gain.setValueAtTime(volume,time);
+  gain.gain.exponentialRampToValueAtTime(0.0001,time+duration);
+  src.connect(filter);filter.connect(gain);gain.connect(master);src.start(time);
+}
+function hz(n){return 440*Math.pow(2,(n-69)/12)}
+function kick(t){
+  var o=audio.createOscillator(),g=audio.createGain();
+  o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(42,t+0.14);
+  g.gain.setValueAtTime(0.8,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+  o.connect(g);g.connect(master);o.start(t);o.stop(t+0.22);
+}
+function snare(t){noise(t,0.16,0.28);tone(180,t,0.12,0.12,"triangle")}
+function hat(t){noise(t,0.045,0.07)}
+function schedule(s,t){
+  if(patterns.kick[s])kick(t);
+  if(patterns.snare[s])snare(t);
+  if(patterns.hat[s])hat(t);
+  if(s%2===0){
+    tone(hz(45+chords[s]),t,0.24,0.09,"sawtooth");
+    tone(hz(57+chords[s]),t,0.18,0.035,"square");
+  }
+  tone(hz(melody[s]),t,0.30,0.12,"sine");
+  setTimeout(function(){highlight(s)},Math.max(0,(t-audio.currentTime)*1000));
+}
+function scheduler(){
+  var bpm=Number(el("tempo").value);
+  var stepDur=60/bpm/4;
+  while(nextTime<audio.currentTime+0.12){
+    schedule(stepIndex,nextTime);
+    nextTime+=stepDur;
+    stepIndex=(stepIndex+1)%16;
+  }
+}
+function playSong(e){
+  unlockAudio(null);
+  setTimeout(function(){
+    if(!audio || audio.state!=="running"){
+      setStatus("Ljudet är blockerat. Öppna filen i Safari, inte i filförhandsvisningen.","bad");
+      log("Play avbruten: AudioContext ej running");
+      return;
+    }
+    if(playing)return;
+    playing=true;stepIndex=0;nextTime=audio.currentTime+0.08;
+    timer=setInterval(scheduler,25);
+    setStatus("Spelar Junis Theme","ok");log("Uppspelning startad");
+  },80);
+  return prevent(e);
+}
+function stopSong(e){
+  if(timer)clearInterval(timer);
+  timer=null;playing=false;stepIndex=0;highlight(-1);
+  setStatus(audio?"Stoppad · ljud aktivt":"Stoppad","warn");log("Stoppad");
+  return prevent(e);
+}
+function testTone(e){
+  unlockAudio(null);
+  setTimeout(function(){
+    if(!audio || audio.state!=="running"){
+      setStatus("Testton blockerad av visaren. Öppna i Safari.","bad");return;
+    }
+    var t=audio.currentTime+0.03;
+    tone(440,t,0.25,0.2,"sine");
+    tone(554.37,t+0.18,0.25,0.2,"sine");
+    tone(659.25,t+0.36,0.35,0.2,"sine");
+    setStatus("Testton spelad","ok");log("Testton spelad");
+  },80);
+  return prevent(e);
+}
+function tempoChanged(){el("tempoText").textContent=el("tempo").value}
+function volumeChanged(){
+  el("volumeText").textContent=el("volume").value;
+  if(master)master.gain.value=Number(el("volume").value)/100;
+}
+function renderGrid(name){
+  var root=el(name+"Grid");
+  root.innerHTML="";
+  var i,b;
+  for(i=0;i<16;i++){
+    b=document.createElement("button");
+    b.className="step"+(patterns[name][i]?" on":"");
+    b.setAttribute("data-name",name);
+    b.setAttribute("data-index",i);
+    b.onclick=function(){
+      var n=this.getAttribute("data-name"),x=Number(this.getAttribute("data-index"));
+      patterns[n][x]=patterns[n][x]?0:1;
+      this.className="step"+(patterns[n][x]?" on":"");
+    };
+    root.appendChild(b);
+  }
+}
+function highlight(s){
+  var buttons=document.querySelectorAll(".step");
+  var i;
+  for(i=0;i<buttons.length;i++)buttons[i].style.outline="";
+  if(s>=0){
+    var active=document.querySelectorAll('[data-index="'+s+'"]');
+    for(i=0;i<active.length;i++)active[i].style.outline="3px solid #f8d66d";
+  }
+}
+function boot(){
+  renderGrid("kick");renderGrid("snare");renderGrid("hat");
+  tempoChanged();volumeChanged();
+  setStatus("JavaScript fungerar. Tryck Aktivera ljud.","ok");
+  log("Självtest klart: knappar och JavaScript aktiva");
+}
+window.onerror=function(message,source,line,col,error){
+  setStatus("JavaScript-fel rad "+line+": "+message,"bad");
+  log("JS-FEL "+line+":"+col+" "+message);
+};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);
+else boot();
+</script>
+</body>
+</html>
